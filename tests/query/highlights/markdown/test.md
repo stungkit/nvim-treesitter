@@ -1,28 +1,28 @@
 # H1
-<!-- <- punctuation.special -->
+<!-- <- @markup.heading.1 -->
 
 ## H2
-<!-- <- punctuation.special -->
+<!-- <- @markup.heading.2 -->
 
 - Item 1
 - Item 2
-<!-- <- punctuation.special -->
+<!-- <- @markup.list -->
 
 1. Item 1
 2. Item 2
-<!-- <- punctuation.special -->
+<!-- <- @markup.list -->
 
 ----![image_description](https://example.com/image.jpg "awesome image title")
-<!--  ^ text.reference                                                    -->
-<!--                              ^ text.uri                              -->
-<!--                                                      ^ text.literal  -->
-<!--^ punctuation.delimiter                                               -->
-<!-- ^ punctuation.delimiter                                              -->
-<!--                                                                      //TODO: currently disabled punctuation.delimiter -->
+<!--  ^ @markup.link.label                                                    -->
+<!--                              ^ @markup.link.url                              -->
+<!--                                                      ^ @markup.link.label  -->
+<!--^ @markup.link                                                 -->
+<!-- ^ @markup.link                                                -->
+<!--                    ^ @markup.link                             -->
 
 [link_text](#local_reference "link go brr...")
-<!-- ^ text.reference                                                     -->
-<!--                 ^ text.uri                                           -->
-<!--                            ^ text.literal                            -->
-<!-- <- punctuation.delimiter                                             -->
-<!--                                                                      //TODO: currently disabled punctuation.delimiter -->
+<!-- ^ @markup.link.label                                                     -->
+<!--                 ^ @markup.link.url                                           -->
+<!--                            ^ @markup.link.label                            -->
+<!-- <- @markup.link                                               -->
+<!--       ^ @markup.link                                          -->

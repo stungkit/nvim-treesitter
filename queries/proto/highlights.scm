@@ -1,19 +1,33 @@
 [
-  "syntax"
-  "package"
-  "option"
-  "import"
-  "service"
-  "rpc"
-  "returns"
-  "message"
-  "enum"
+  "extend"
+  "extensions"
   "oneof"
-  "optional"
-  "repeated"
+  "option"
   "reserved"
+  "syntax"
   "to"
 ] @keyword
+
+[
+  "enum"
+  "service"
+  "message"
+] @keyword.type
+
+"rpc" @keyword.function
+
+"returns" @keyword.return
+
+[
+  "optional"
+  "repeated"
+  "required"
+] @keyword.modifier
+
+[
+  "package"
+  "import"
+] @keyword.import
 
 [
   (key_type)
@@ -28,21 +42,26 @@
 (enum_field
   (identifier) @constant)
 
+(string) @string
+
 [
-  (string)
   "\"proto3\""
-] @string
+  "\"proto2\""
+] @string.special
 
 (int_lit) @number
 
-(float_lit) @float
+(float_lit) @number.float
 
 [
   (true)
   (false)
 ] @boolean
 
-(comment) @comment
+(comment) @comment @spell
+
+((comment) @comment.documentation
+  (#lua-match? @comment.documentation "^/[*][*][^*].*[*]/$"))
 
 [
   "("
@@ -53,11 +72,11 @@
   "}"
   "<"
   ">"
-]  @punctuation.bracket
+] @punctuation.bracket
 
 [
- ";"
- ","
+  ";"
+  ","
 ] @punctuation.delimiter
 
 "=" @operator

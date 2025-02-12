@@ -1,101 +1,73 @@
 [
-  (compound_statement) 
+  (compound_statement)
   (field_declaration_list)
   (case_statement)
   (enumerator_list)
   (compound_literal_expression)
   (initializer_list)
   (init_declarator)
-  (expression_statement)
-] @indent
+] @indent.begin
 
-(
-  ERROR
-    "for" "(" @indent ";" ";" ")" @indent_end)
-(
-  (for_statement
-    body: (_) @_body
-  ) @indent
-  (#not-has-type? @_body compound_statement)
-)
+; With current indent logic, if we capture expression_statement with @indent.begin
+; It will be affected by _parent_ node with error subnodes deep down the tree
+; So narrow indent capture to check for error inside expression statement only,
+(expression_statement
+  (_) @indent.begin
+  ";" @indent.end)
 
-(
-  while_statement
-    condition: (_) @indent
-)
-(
-  (while_statement
-    body: (_) @_body
-  ) @indent
-  (#not-has-type? @_body compound_statement)
-)
+(ERROR
+  "for"
+  "(" @indent.begin
+  ";"
+  ";"
+  ")" @indent.end)
 
-(
-  (if_statement)
-  (ERROR "else") @indent
-)
+((for_statement
+  body: (_) @_body) @indent.begin
+  (#not-kind-eq? @_body "compound_statement"))
 
-(
- if_statement
-  condition: (_) @indent
-)
-;; Make sure all cases of if-else are tagged with @indent
-;; So we will offset the indents for the else case
-(
-  (if_statement
-    consequence: (compound_statement)
-    "else" @branch
-    alternative: 
-      [
-        [ "{" "}" ] @branch
-        (compound_statement ["{" "}"] @branch)
-        (_)
-      ] 
-  ) @indent
-)
-(
-  (if_statement
-    consequence: (_ ";" @indent_end) @_consequence
-  ) @indent
-  (#not-has-type? @_consequence compound_statement)
-)
-(
-  (if_statement
-    consequence: (_) @_consequence
-    "else" @branch
-    alternative: 
-      [
-        [ "{" "}" ] @branch
-        (compound_statement ["{" "}"] @branch)
-        (_)
-      ] 
-  )
-  (#not-has-type? @_consequence compound_statement)
-)
+(while_statement
+  condition: (_) @indent.begin)
 
-;; Dedent for chaining if-else statements
-;; this will go recursively through each if-elseif
-;; if-elseif -> second `if` is dedented once, indented twice
-;; if-elseif-elseif -> third `if` is dedented twice, indented 3 times
-;; -> all are indented once
-(
-  (if_statement
-    consequence: (_)
-    alternative: 
-      [
-        (if_statement consequence: (compound_statement) @dedent)
-        (_)
-      ] @dedent
-  )
-)
+((while_statement
+  body: (_) @_body) @indent.begin
+  (#not-kind-eq? @_body "compound_statement"))
 
-(compound_statement "}" @indent_end)
+((if_statement)
+  .
+  (ERROR
+    "else" @indent.begin))
+
+(if_statement
+  condition: (_) @indent.begin)
+
+; Supports if without braces (but not both if-else without braces)
+(if_statement
+  consequence: (_
+    ";" @indent.end) @_consequence
+  (#not-kind-eq? @_consequence "compound_statement")
+  alternative: (else_clause
+    "else" @indent.branch
+    [
+      (if_statement
+        (compound_statement) @indent.dedent)? @indent.dedent
+      (compound_statement)? @indent.dedent
+      (_)? @indent.dedent
+    ])?) @indent.begin
+
+(else_clause
+  (_
+    .
+    "{" @indent.branch))
+
+(compound_statement
+  "}" @indent.end)
 
 [
   ")"
   "}"
   (statement_identifier)
-] @branch
+] @indent.branch
 
 [
   "#define"
@@ -105,16 +77,23 @@
   "#if"
   "#else"
   "#endif"
-] @zero_indent
+] @indent.zero
 
 [
   (preproc_arg)
   (string_literal)
-] @ignore
+] @indent.ignore
 
-((ERROR (parameter_declaration)) @aligned_indent
- (#set! "delimiter" "()"))
-([(argument_list) (parameter_list)] @aligned_indent
-  (#set! "delimiter" "()"))
+((ERROR
+  (parameter_declaration)) @indent.align
+  (#set! indent.open_delimiter "(")
+  (#set! indent.close_delimiter ")"))
 
-(comment) @auto
+([
+  (argument_list)
+  (parameter_list)
+] @indent.align
+  (#set! indent.open_delimiter "(")
+  (#set! indent.close_delimiter ")"))
+
+(comment) @indent.auto

@@ -1,17 +1,20 @@
-[(import_declaration)
- (const_declaration)
- (type_declaration)
- (literal_value)
- (type_initializer)
- (block)
- (map)
- (call_expression)
- (parameter_list)]
-@indent
+[
+  (import_declaration)
+  (const_declaration)
+  (type_declaration)
+  (type_initializer)
+  (block)
+  (map_init_expression)
+  (call_expression)
+  (parameter_list)
+] @indent.begin
 
-[ "}"]
-@branch
+"}" @indent.branch
 
-(parameter_list ")" @branch)
+(parameter_list
+  ")" @indent.branch)
 
-(comment) @ignore
+[
+  (line_comment)
+  (block_comment)
+] @indent.ignore

@@ -1,17 +1,68 @@
+(id) @variable
+
+(comment) @comment @spell
+
+; Literals
+(null) @constant.builtin
+
+(string) @string
+
+(number) @number
+
 [
   (true)
   (false)
 ] @boolean
 
-(comment) @comment
-(id) @variable
-(import) @include
-(null) @constant.builtin
-(number) @number
-(string) @string
+; Keywords
+"for" @keyword.repeat
 
-(fieldname (id) @label)
+"in" @keyword.operator
 
+"function" @keyword.function
+
+[
+  "if"
+  "then"
+  "else"
+] @keyword.conditional
+
+[
+  (local)
+  (tailstrict)
+  "function"
+] @keyword
+
+[
+  "assert"
+  "error"
+] @keyword.exception
+
+[
+  (dollar)
+  (self)
+  (super)
+] @variable.builtin
+
+((id) @variable.builtin
+  (#eq? @variable.builtin "std"))
+
+; Operators
+[
+  (multiplicative)
+  (additive)
+  (bitshift)
+  (comparison)
+  (equality)
+  (bitand)
+  (bitxor)
+  (bitor)
+  (and)
+  (or)
+  (unaryop)
+] @operator
+
+; Punctuation
 [
   "["
   "]"
@@ -26,51 +77,59 @@
   ","
   ";"
   ":"
-  "::"
-  ":::"
 ] @punctuation.delimiter
 
-(expr
-  operator: (_) @operator)
 [
-  "+"
-  "="
-] @operator
+  "::"
+  ":::"
+] @punctuation.special
 
-"in" @keyword.operator
+(field
+  (fieldname)
+  "+" @punctuation.special)
 
+; Imports
 [
- (local)
- "assert"
-] @keyword
+  (import)
+  (importstr)
+] @keyword.import
 
-[
-  "else"
-  "if"
-  "then"
-] @conditional
+; Fields
+(fieldname
+  (id) @variable.member)
 
-[
-  (dollar)
-  (self)
-] @variable.builtin
-((id) @variable.builtin
- (#eq? @variable.builtin "std"))
+(fieldname
+  (string
+    (string_content) @variable.member))
 
-; Function declaration
+; Functions
+(field
+  function: (fieldname
+    (id) @function))
+
+(field
+  function: (fieldname
+    (string
+      (string_content) @function)))
+
+(param
+  identifier: (id) @variable.parameter)
+
 (bind
-  function: (id) @function
-  params: (params
-            (param
-              identifier: (id) @parameter)))
+  (id) @variable)
+
+(bind
+  function: (id) @function)
 
 ; Function call
-(expr
-  (expr (id) @function.call)
+(functioncall
+  (fieldaccess
+    last: (id) @function.call)?
+  (fieldaccess_super
+    (id) @function.call)?
+  (id)? @function.call
   "("
   (args
     (named_argument
-      (id) @parameter))?
+      (id) @variable.parameter))?
   ")")
-
-(ERROR) @error
