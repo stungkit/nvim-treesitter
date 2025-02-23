@@ -1,22 +1,81 @@
- ; Namespace
-
-(namespace_definition) @namespace
+; Variables
+((identifier) @variable
+  (#set! priority 95))
 
 ; Includes
-
 [
   "include"
   "cpp_include"
-] @include
+] @keyword.import
 
-(include_path) @string
-(package_path) @string
+; Function
+(function_definition
+  (identifier) @function)
 
-; Builtins
+; Fields
+(field
+  (identifier) @property)
 
-(primitive) @type.builtin
+; Parameters
+(function_definition
+  (parameters
+    (parameter
+      (identifier) @variable.parameter)))
 
+(throws
+  (parameters
+    (parameter
+      (identifier) @variable.parameter)))
+
+; Types
+(typedef_identifier) @type
+
+(struct_definition
+  "struct"
+  (identifier) @type)
+
+(union_definition
+  "union"
+  (identifier) @type)
+
+(exception_definition
+  "exception"
+  (identifier) @type)
+
+(service_definition
+  "service"
+  (identifier) @type)
+
+(interaction_definition
+  "interaction"
+  (identifier) @type)
+
+(type
+  type: (identifier) @type)
+
+(definition_type
+  type: (identifier) @type)
+
+((identifier) @type
+  (#lua-match? @type "^[_]*[A-Z]"))
+
+; Constants
+(const_definition
+  (identifier) @constant)
+
+((identifier) @constant
+  (#lua-match? @constant "^[_A-Z][A-Z0-9_]*$"))
+
+(enum_definition
+  type: (identifier) @type)
+
+(enum_definition
+  "{"
+  (identifier) @constant)
+
+; Builtin Types
 [
+  (primitive)
   "list"
   "map"
   "set"
@@ -25,81 +84,61 @@
   "void"
 ] @type.builtin
 
-; Function
+; Namespace
+(namespace_declaration
+  (namespace_scope) @string.special)
 
-(function_identifier) @function
-
-; Fields
-
-(field_identifier) @field
-
-; Parameters
-
-(param_identifier) @parameter
-(exception_param_identifier) @parameter
-
-; Variables
-
-(identifier) @variable
-
-; Constants
-
-(const_identifier) @constant
-(enum_member) @constant
-
-; Types
-
-(enum_identifier) @type
-(definition_type) @type
-(exception_identifier) @type
-(exception_param_type) @type
-(field_type) @type
-(param_type) @type
-(type_identifier) @type
+(namespace_declaration
+  (namespace_scope)
+  [
+    type: (namespace) @module
+    (_
+      (identifier) @module)
+  ])
 
 ; Attributes
+(annotation_definition
+  (annotation_identifier
+    (identifier) @attribute))
 
-(annotation_identifier) @attribute
-(uri_def) @attribute
+(fb_annotation_definition
+  "@" @attribute
+  (annotation_identifier
+    (identifier) @attribute)
+  (identifier)? @attribute)
+
+(namespace_uri
+  (string) @attribute)
 
 ; Operators
-
 [
- "="
- "+"
- "-"
+  "="
+  "&"
 ] @operator
 
 ; Exceptions
-
-[
- "throws"
-] @exception
+"throws" @keyword.exception
 
 ; Keywords
-
 [
-  "cpp_include"
-  "enum"
   "exception"
   "extends"
-  "include"
-  "interaction"
-  "namespace"
-  "oneway"
-  "optional"
-  "required"
-  "senum"
-  "service"
-  "struct"
   "typedef"
-  "union"
+  "uri"
 ] @keyword
 
-; Deprecated Keywords
-
 [
-  "async"
+  "enum"
+  "struct"
+  "union"
+  "senum"
+  "interaction"
+  "namespace"
+  "service"
+] @keyword.type
+
+; Deprecated Keywords
+[
   "cocoa_prefix"
   "cpp_namespace"
   "csharp_namespace"
@@ -118,76 +157,81 @@
   "xsd_optional"
 ] @keyword
 
-; Extended Kewords
+; Extended Keywords
 [
-  "client"
-  "idempotent"
   "package"
   "performs"
-  "permanent"
-  "readonly"
-  "server"
-  "safe"
-  "stateful"
-  "transient"
 ] @keyword
 
-; Literals
-
 [
- (annotation_value)
- (string)
-] @string
+  "async"
+  "oneway"
+] @keyword.coroutine
+
+; Qualifiers
+[
+  "client"
+  "const"
+  "idempotent"
+  "optional"
+  "permanent"
+  "readonly"
+  "required"
+  "safe"
+  "server"
+  "stateful"
+  "transient"
+] @keyword.modifier
+
+; Literals
+(string) @string
 
 (escape_sequence) @string.escape
 
-(uri (string_fragment) @text.uri) @string.special
+(namespace_uri
+  (string) @string.special.url)
 
 (number) @number
 
-(double) @float
+(double) @number.float
 
 (boolean) @boolean
 
 ; Typedefs
-
-(typedef_definition) @type.definition
-(namespace_scope) @type.definition
-
-; Qualifiers
-
-[
-  "const"
-  (exception_modifier)
-  (field_modifier)
-  (function_modifier)
-] @type.qualifier
+(typedef_identifier) @type.definition
 
 ; Punctuation
+"*" @punctuation.special
 
 [
-  "*"
-  "&"
-  "@"
-] @punctuation.special
-
-["{" "}"] @punctuation.bracket
-
-["(" ")"] @punctuation.bracket
-
-["[" "]"] @punctuation.bracket
-
-["<" ">"] @punctuation.bracket
+  "{"
+  "}"
+  "("
+  ")"
+  "["
+  "]"
+  "<"
+  ">"
+] @punctuation.bracket
 
 [
-  ";"
+  "."
   ","
+  ";"
+  ":"
 ] @punctuation.delimiter
 
-; Errors
-
-(invalid) @error
-
 ; Comments
-
 (comment) @comment @spell
+
+((comment) @comment.documentation
+  (#lua-match? @comment.documentation "^/[*][*][^*].*[*]/$"))
+
+((comment) @comment.documentation
+  (#lua-match? @comment.documentation "^///[^/]"))
+
+((comment) @comment.documentation
+  (#lua-match? @comment.documentation "^///$"))
+
+((comment) @keyword.directive @nospell
+  (#lua-match? @keyword.directive "#!.*"))

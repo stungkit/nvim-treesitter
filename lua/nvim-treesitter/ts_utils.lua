@@ -34,6 +34,11 @@ local function get_node_text(node, bufnr)
 end
 
 ---@private
+---@param node TSNode
+---@param type_patterns string[]
+---@param transform_fn fun(line: string): string
+---@param bufnr integer
+---@return string
 function M._get_line_for_node(node, type_patterns, transform_fn, bufnr)
   local node_type = node:type()
   local is_valid = false
@@ -46,25 +51,25 @@ function M._get_line_for_node(node, type_patterns, transform_fn, bufnr)
   if not is_valid then
     return ""
   end
-  local line = transform_fn(vim.trim(get_node_text(node, bufnr)[1] or ""))
+  local line = transform_fn(vim.trim(get_node_text(node, bufnr)[1] or ""), node)
   -- Escape % to avoid statusline to evaluate content as expression
   return line:gsub("%%", "%%%%")
 end
 
---- Gets the actual text content of a node
--- @deprecated Use vim.treesitter.query.get_node_text
+-- Gets the actual text content of a node
+-- @deprecated Use vim.treesitter.get_node_text
 -- @param node the node to get the text from
 -- @param bufnr the buffer containing the node
 -- @return list of lines of text of the node
 function M.get_node_text(node, bufnr)
   vim.notify_once(
-    "nvim-treesitter.ts_utils.get_node_text is deprecated: use vim.treesitter.query.get_node_text",
+    "nvim-treesitter.ts_utils.get_node_text is deprecated: use vim.treesitter.get_node_text",
     vim.log.levels.WARN
   )
   return get_node_text(node, bufnr)
 end
 
---- Determines whether a node is the parent of another
+-- Determines whether a node is the parent of another
 -- @param dest the possible parent
 -- @param source the possible child node
 function M.is_parent(dest, source)
@@ -84,12 +89,12 @@ function M.is_parent(dest, source)
   return false
 end
 
---- Get next node with same parent
--- @param node                 node
--- @param allow_switch_parents allow switching parents if last node
--- @param allow_next_parent    allow next parent if last node and next parent without children
+-- Get next node with same parent
+---@param node                  TSNode
+---@param allow_switch_parents? boolean allow switching parents if last node
+---@param allow_next_parent?    boolean allow next parent if last node and next parent without children
 function M.get_next_node(node, allow_switch_parents, allow_next_parent)
-  local destination_node
+  local destination_node ---@type TSNode
   local parent = node:parent()
 
   if not parent then
@@ -116,12 +121,12 @@ function M.get_next_node(node, allow_switch_parents, allow_next_parent)
   return destination_node
 end
 
---- Get previous node with same parent
--- @param node                     node
--- @param allow_switch_parents     allow switching parents if first node
--- @param allow_previous_parent    allow previous parent if first node and previous parent without children
+-- Get previous node with same parent
+---@param node                   TSNode
+---@param allow_switch_parents?  boolean allow switching parents if first node
+---@param allow_previous_parent? boolean allow previous parent if first node and previous parent without children
 function M.get_previous_node(node, allow_switch_parents, allow_previous_parent)
-  local destination_node
+  local destination_node ---@type TSNode
   local parent = node:parent()
   if not parent then
     return
@@ -148,7 +153,7 @@ function M.get_previous_node(node, allow_switch_parents, allow_previous_parent)
 end
 
 function M.get_named_children(node)
-  local nodes = {}
+  local nodes = {} ---@type TSNode[]
   for i = 0, node:named_child_count() - 1, 1 do
     nodes[i + 1] = node:named_child(i)
   end
@@ -166,9 +171,9 @@ function M.get_node_at_cursor(winnr, ignore_injected_langs)
     return
   end
 
-  local root
+  local root ---@type TSNode|nil
   if ignore_injected_langs then
-    for _, tree in ipairs(root_lang_tree:trees()) do
+    for _, tree in pairs(root_lang_tree:trees()) do
       local tree_root = tree:root()
       if tree_root and ts.is_in_node_range(tree_root, cursor_range[1], cursor_range[2]) then
         root = tree_root
@@ -197,18 +202,35 @@ function M.get_root_for_position(line, col, root_lang_tree)
 
   local lang_tree = root_lang_tree:language_for_range { line, col, line, col }
 
-  for _, tree in ipairs(lang_tree:trees()) do
-    local root = tree:root()
+  while true do
+    for _, tree in pairs(lang_tree:trees()) do
+      local root = tree:root()
 
-    if root and ts.is_in_node_range(root, line, col) then
-      return root, tree, lang_tree
+      if root and ts.is_in_node_range(root, line, col) then
+        return root, tree, lang_tree
+      end
     end
+
+    if lang_tree == root_lang_tree then
+      break
+    end
+
+    -- This case can happen when the cursor is at the start of a line that ends a injected region,
+    -- e.g., the first `]` in the following lua code:
+    -- ```
+    -- vim.cmd[[
+    -- ]]
+    -- ```
+    lang_tree = lang_tree:parent() -- NOTE: parent() method is private
   end
 
   -- This isn't a likely scenario, since the position must belong to a tree somewhere.
   return nil, nil, lang_tree
 end
 
+---comment
+---@param node TSNode
+---@return TSNode result
 function M.get_root_for_node(node)
   local parent = node
   local result = node
@@ -228,12 +250,17 @@ function M.highlight_node(node, buf, hl_namespace, hl_group)
   M.highlight_range({ node:range() }, buf, hl_namespace, hl_group)
 end
 
---- Get a compatible vim range (1 index based) from a TS node range.
+-- Get a compatible vim range (1 index based) from a TS node range.
 --
 -- TS nodes start with 0 and the end col is ending exclusive.
 -- They also treat a EOF/EOL char as a char ending in the first
 -- col of the next row.
+---comment
+---@param range integer[]
+---@param buf integer|nil
+---@return integer, integer, integer, integer
 function M.get_vim_range(range, buf)
+  ---@type integer, integer, integer, integer
   local srow, scol, erow, ecol = unpack(range)
   srow = srow + 1
   scol = scol + 1
@@ -253,7 +280,9 @@ function M.get_vim_range(range, buf)
 end
 
 function M.highlight_range(range, buf, hl_namespace, hl_group)
+  ---@type integer, integer, integer, integer
   local start_row, start_col, end_row, end_col = unpack(range)
+  ---@diagnostic disable-next-line: missing-parameter
   vim.highlight.range(buf, hl_namespace, hl_group, { start_row, start_col }, { end_row, end_col })
 end
 
@@ -288,13 +317,15 @@ function M.update_selection(buf, node, selection_mode)
 end
 
 -- Byte length of node range
+---@param node TSNode
+---@return number
 function M.node_length(node)
   local _, _, start_byte = node:start()
   local _, _, end_byte = node:end_()
   return end_byte - start_byte
 end
 
---- @deprecated Use `vim.treesitter.is_in_node_range()` instead
+---@deprecated Use `vim.treesitter.is_in_node_range()` instead
 function M.is_in_node_range(node, line, col)
   vim.notify_once(
     "nvim-treesitter.ts_utils.is_in_node_range is deprecated: use vim.treesitter.is_in_node_range",
@@ -303,7 +334,7 @@ function M.is_in_node_range(node, line, col)
   return ts.is_in_node_range(node, line, col)
 end
 
---- @deprecated Use `vim.treesitter.get_node_range()` instead
+---@deprecated Use `vim.treesitter.get_node_range()` instead
 function M.get_node_range(node_or_range)
   vim.notify_once(
     "nvim-treesitter.ts_utils.get_node_range is deprecated: use vim.treesitter.get_node_range",
@@ -312,6 +343,8 @@ function M.get_node_range(node_or_range)
   return ts.get_node_range(node_or_range)
 end
 
+---@param node TSNode
+---@return table
 function M.node_to_lsp_range(node)
   local start_line, start_col, end_line, end_col = ts.get_node_range(node)
   local rtn = {}
@@ -320,17 +353,19 @@ function M.node_to_lsp_range(node)
   return rtn
 end
 
---- Memoizes a function based on the buffer tick of the provided bufnr.
+-- Memoizes a function based on the buffer tick of the provided bufnr.
 -- The cache entry is cleared when the buffer is detached to avoid memory leaks.
--- @param fn: the fn to memoize, taking the bufnr as first argument
--- @param options:
+-- The options argument is a table with two optional values:
 --  - bufnr: extracts a bufnr from the given arguments.
 --  - key: extracts the cache key from the given arguments.
--- @returns a memoized function
+---@param fn function the fn to memoize, taking the buffer as first argument
+---@param options? {bufnr: integer?, key: string|fun(...): string?} the memoization options
+---@return function: a memoized function
 function M.memoize_by_buf_tick(fn, options)
   options = options or {}
 
-  local cache = {}
+  ---@type table<string, {result: any, last_tick: integer}>
+  local cache = setmetatable({}, { __mode = "kv" })
   local bufnr_fn = utils.to_func(options.bufnr or utils.identity)
   local key_fn = utils.to_func(options.key or utils.identity)
 
@@ -376,6 +411,7 @@ function M.swap_nodes(node_or_range1, node_or_range2, bufnr, cursor_to_second)
 
   local edit1 = { range = range1, newText = table.concat(text2, "\n") }
   local edit2 = { range = range2, newText = table.concat(text1, "\n") }
+  bufnr = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
   vim.lsp.util.apply_text_edits({ edit1, edit2 }, bufnr, "utf-8")
 
   if cursor_to_second then
@@ -424,12 +460,21 @@ function M.goto_node(node, goto_end, avoid_set_jump)
     utils.set_jump()
   end
   local range = { M.get_vim_range { node:range() } }
+  ---@type table<number>
   local position
   if not goto_end then
     position = { range[1], range[2] }
   else
     position = { range[3], range[4] }
   end
+
+  -- Enter visual mode if we are in operator pending mode
+  -- If we don't do this, it will miss the last character.
+  local mode = vim.api.nvim_get_mode()
+  if mode.mode == "no" then
+    vim.cmd "normal! v"
+  end
+
   -- Position is 1, 0 indexed.
   api.nvim_win_set_cursor(0, { position[1], position[2] - 1 })
 end

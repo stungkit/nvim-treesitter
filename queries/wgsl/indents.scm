@@ -1,19 +1,43 @@
 [
-  (parameter_list)
   (compound_statement)
   (loop_statement)
   (struct_declaration)
-] @indent
+  (type_constructor_or_function_call_expression)
+] @indent.begin
 
-(compound_statement "}" @indent_end)
-(loop_statement "}" @indent_end)
-(function_declaration ")" @indent_end)
-(struct_declaration "}" @indent_end)
+((parameter_list) @indent.begin
+  (#set! indent.immediate)
+  (#set! indent.start_at_same_line))
+
+(function_declaration
+  "(" @indent.begin
+  (#set! indent.immediate))
+
+(ERROR
+  "fn"
+  (identifier)
+  "(" @indent.begin
+  (#set! indent.immediate))
+
+(compound_statement
+  "}" @indent.end)
+
+(loop_statement
+  "}" @indent.end)
+
+(function_declaration
+  ")" @indent.end)
+
+(struct_declaration
+  "}" @indent.end)
 
 [
   "else"
   ")"
   "}"
-] @branch
+] @indent.branch
 
-[(line_comment) (block_comment)] @auto
+[
+  (line_comment)
+  (block_comment)
+] @indent.auto

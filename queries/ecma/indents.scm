@@ -16,42 +16,67 @@
   (switch_statement)
   (template_substitution)
   (ternary_expression)
-] @indent
+] @indent.begin
 
-(arguments (call_expression) @indent)
-(binary_expression (call_expression) @indent)
-(expression_statement (call_expression) @indent)
+(arguments
+  (call_expression) @indent.begin)
+
+(binary_expression
+  (call_expression) @indent.begin)
+
+(expression_statement
+  (call_expression) @indent.begin)
+
 (arrow_function
   body: (_) @_body
-  (#not-has-type? @_body statement_block)
-) @indent
+  (#not-kind-eq? @_body "statement_block")) @indent.begin
+
 (assignment_expression
   right: (_) @_right
-  (#not-has-type? @_right arrow_function function)
-) @indent
+  (#not-kind-eq? @_right "arrow_function" "function")) @indent.begin
+
 (variable_declarator
   value: (_) @_value
-  (#not-has-type? @_value arrow_function call_expression function)
-) @indent
+  (#not-kind-eq? @_value "arrow_function" "call_expression" "function")) @indent.begin
 
-(arguments ")" @indent_end)
-(object "}" @indent_end)
-(statement_block "}" @indent_end)
+(arguments
+  ")" @indent.end)
+
+(object
+  "}" @indent.end)
+
+(statement_block
+  "}" @indent.end)
 
 [
-  (arguments (object))
+  (arguments
+    (object))
   ")"
   "}"
   "]"
-] @branch
-(statement_block "{" @branch)
+] @indent.branch
 
-(parenthesized_expression ("(" (_) ")" @indent_end))
-["}" "]"] @indent_end
+(statement_block
+  "{" @indent.branch)
+
+((parenthesized_expression
+  "("
+  (_)
+  ")" @indent.end) @_outer
+  (#not-has-parent? @_outer if_statement))
+
+[
+  "}"
+  "]"
+] @indent.end
+
+(template_string) @indent.ignore
 
 [
   (comment)
-  (template_string)
-] @ignore
+  (ERROR)
+] @indent.auto
 
-(ERROR) @auto
+(if_statement
+  consequence: (_) @indent.dedent
+  (#not-kind-eq? @indent.dedent statement_block)) @indent.begin

@@ -1,32 +1,70 @@
-(document) @scope
-(definition) @scope
-
+; Scopes
 [
-  (identifier)
-  (field_type)
-  (custom_type)
-] @reference
-(const_value (const_identifier) @reference)
+  (document)
+  (definition)
+] @local.scope
 
-(annotation_identifier) @definition
+; References
+(identifier) @local.reference
 
-(const (const_identifier) @definition.constant)
-(enum_member) @definition.constant
+; Definitions
+(annotation_identifier) @local.definition
 
-(enum_identifier) @definition.enum
+(const_definition
+  (identifier) @local.definition.constant)
 
-(field_identifier) @definition.field
+(enum_definition
+  "enum"
+  .
+  (identifier) @local.definition.enum
+  "{"
+  (identifier) @local.definition.constant
+  "}")
 
-(function_identifier) @definition.function
+(senum_definition
+  "senum"
+  .
+  (identifier) @local.definition.enum)
 
-(namespace_definition) @definition.namespace
+(field
+  (identifier) @local.definition.field)
 
-[
-  (param_identifier)
-  (exception_param_identifier)
-] @definition.parameter
+(function_definition
+  (identifier) @local.definition.function)
 
-[
-  (type_identifier)
-  (exception_identifier)
-] @definition.type
+(namespace_declaration
+  "namespace"
+  (namespace_scope)
+  .
+  (_) @local.definition.namespace
+  (namespace_uri)?)
+
+(parameter
+  (identifier) @local.definition.parameter)
+
+(struct_definition
+  "struct"
+  .
+  (identifier) @local.definition.type)
+
+(union_definition
+  "union"
+  .
+  (identifier) @local.definition.type)
+
+(exception_definition
+  "exception"
+  .
+  (identifier) @local.definition.type)
+
+(service_definition
+  "service"
+  .
+  (identifier) @local.definition.type)
+
+(interaction_definition
+  "interaction"
+  .
+  (identifier) @local.definition.type)
+
+(typedef_identifier) @local.definition.type

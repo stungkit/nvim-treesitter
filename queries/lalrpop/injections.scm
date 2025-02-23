@@ -1,9 +1,15 @@
-[
- (normal_action)
- (failible_action)
-] @rust
+((comment) @injection.content
+  (#set! injection.language "comment"))
 
-(use) @rust
+([
+  (normal_action)
+  (failible_action)
+] @injection.content
+  (#set! injection.language "rust"))
 
-((regex_literal) @regex
- (#offset! @regex 0 2 0 -1))
+((use) @injection.content
+  (#set! injection.language "rust"))
+
+((regex_literal) @injection.content
+  (#set! injection.language "regex")
+  (#offset! @injection.content 0 2 0 -1))

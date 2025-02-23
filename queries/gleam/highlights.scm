@@ -2,31 +2,27 @@
 [
   "as"
   "let"
+  "panic"
   "todo"
-  "try"
+  "use"
 ] @keyword
 
+"type" @keyword.type
+
 ; Function Keywords
-[
-  "fn"
-  "type"
-] @keyword.function
+"fn" @keyword.function
 
 ; Imports
-[
-  "import"
-] @include
+"import" @keyword.import
 
 ; Conditionals
 [
   "case"
   "if"
-] @conditional
+] @keyword.conditional
 
 ; Exceptions
-[
-  "assert"
-] @exception
+"assert" @keyword.exception
 
 ; Punctuation
 [
@@ -43,11 +39,11 @@
 [
   ","
   "."
+  ":"
+  "->"
 ] @punctuation.delimiter
 
-[
-  "#"
-] @punctuation.special
+"#" @punctuation.special
 
 ; Operators
 [
@@ -59,11 +55,9 @@
   "+."
   "-"
   "-."
-  "->"
   ".."
   "/"
   "/."
-  ":"
   "<"
   "<."
   "<="
@@ -82,11 +76,12 @@
 (identifier) @variable
 
 ; Comments
+(comment) @comment @spell
+
 [
   (module_comment)
   (statement_comment)
-  (comment)
-] @comment
+] @comment.documentation @spell
 
 ; Unused Identifiers
 [
@@ -95,10 +90,16 @@
 ] @comment
 
 ; Modules & Imports
-(module ("/" @namespace)?) @namespace
-(import alias: ((identifier) @namespace)?)
-(remote_type_identifier module: (identifier) @namespace)
-(unqualified_import name: (identifier) @function)
+(module) @module
+
+(import
+  alias: ((identifier) @module)?)
+
+(remote_type_identifier
+  module: (identifier) @module)
+
+(unqualified_import
+  name: (identifier) @function)
 
 ; Strings
 (string) @string
@@ -107,61 +108,92 @@
 (bit_string_segment) @string.special
 
 ; Numbers
-[
-  (integer)
-  (float)
-  (bit_string_segment_option_unit)
-] @number
+(integer) @number
+
+(float) @number.float
 
 ; Function Parameter Labels
-(function_call arguments: (arguments (argument label: (label) @symbol ":" @symbol)))
-(function_parameter label: (label)? @symbol name: (identifier) @parameter (":" @parameter)?)
+(function_call
+  arguments: (arguments
+    (argument
+      label: (label) @label)))
+
+(function_parameter
+  label: (label)? @label
+  name: (identifier) @variable.parameter)
 
 ; Records
-(record arguments: (arguments (argument label: (label) @property ":" @property)?))
-(record_pattern_argument  label: (label) @property ":" @property)
-(record_update_argument label: (label) @property ":" @property)
-(field_access record: (identifier) @variable field: (label) @property)
+(record
+  arguments: (arguments
+    (argument
+      label: (label) @variable.member)?))
 
-; Type Constructors
-(data_constructor_argument label: (label) @property ":" @property)
+(record_pattern_argument
+  label: (label) @variable.member)
 
-; Type Parameters
-(type_parameter) @parameter
+(record_update_argument
+  label: (label) @variable.member)
+
+(field_access
+  record: (identifier) @variable
+  field: (label) @variable.member)
+
+(data_constructor_argument
+  (label) @variable.member)
 
 ; Types
-((type_identifier) @type (#not-any-of? @type "True" "False"))
-
-; Booleans
-((type_identifier) @boolean (#any-of? @boolean "True" "False"))
-
-; Type Variables
-(type_var) @type
+[
+  (type_identifier)
+  (type_parameter)
+  (type_var)
+] @type
 
 ; Type Qualifiers
 [
   "const"
   "external"
-  "opaque"
-  "pub"
-] @type.qualifier
+  (opacity_modifier)
+  (visibility_modifier)
+] @keyword.modifier
 
 ; Tuples
-(tuple_access index: (integer) @operator)
+(tuple_access
+  index: (integer) @operator)
 
 ; Functions
-(function name: (identifier) @function)
-(public_function name: (identifier) @function)
-(function_call function: (identifier) @function)
-(function_call function: (field_access field: (label) @function))
+(function
+  name: (identifier) @function)
+
+(function_call
+  function: (identifier) @function.call)
+
+(function_call
+  function: (field_access
+    field: (label) @function.call))
 
 ; External Functions
-(public_external_function name: (identifier) @function)
-(external_function name: (identifier) @function)
-(external_function_body (string) @namespace . (string) @function)
+(external_function
+  name: (identifier) @function)
+
+(external_function_body
+  (string) @module
+  .
+  (string) @function)
+
+; Constructors
+(constructor_name) @type @constructor
+
+([
+  (type_identifier)
+  (constructor_name)
+] @constant.builtin
+  (#any-of? @constant.builtin "Ok" "Error"))
+
+; Booleans
+((constructor_name) @boolean
+  (#any-of? @boolean "True" "False"))
 
 ; Pipe Operator
-(binary_expression operator: "|>" right: (identifier) @function)
-
-; Parser Errors
-(ERROR) @error
+(binary_expression
+  operator: "|>"
+  right: (identifier) @function)
